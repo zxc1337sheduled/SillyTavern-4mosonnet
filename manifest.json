@@ -1,0 +1,8 @@
+{
+  "display_name": "Parameter Filter",
+  "loading_order": 1,
+  "js": "index.js",
+  "author": "Your name",
+  "version": "1.0.0",
+  "generate_interceptor": "parameterFilterInterceptor"
+}
