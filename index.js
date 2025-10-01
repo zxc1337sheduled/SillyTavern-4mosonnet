@@ -1,3 +1,9 @@
+import { saveSettingsDebounced, eventSource, event_types } from '../../../../script.js';
+import { extension_settings, renderExtensionTemplateAsync } from '../../../extensions.js';
+
+const extensionName = 'parameter-filter';
+const extensionFolder = `third-party/${extensionName}`;
+
 // Настройки по умолчанию
 const defaultSettings = {
   filterTopP: false,
@@ -7,75 +13,43 @@ const defaultSettings = {
 let settings = { ...defaultSettings };
 
 // Загрузка настроек
-async function loadSettings() {
-  try {
-    const saved = await SillyTavern.getContext().extensionSettings['parameter-filter'];
-    if (saved) {
-      settings = { ...defaultSettings, ...saved };
-    }
-  } catch (e) {
-    console.log('Parameter Filter: Using default settings');
+function loadSettings() {
+  if (!extension_settings[extensionName]) {
+    extension_settings[extensionName] = { ...defaultSettings };
   }
+  
+  settings = extension_settings[extensionName];
   updateUI();
 }
 
 // Сохранение настроек
-async function saveSettings() {
-  try {
-    SillyTavern.getContext().extensionSettings['parameter-filter'] = settings;
-    await SillyTavern.getContext().saveSettingsDebounced();
-  } catch (e) {
-    console.error('Parameter Filter: Failed to save settings', e);
-  }
+function saveSettings() {
+  extension_settings[extensionName] = settings;
+  saveSettingsDebounced();
 }
 
 // Обновление UI
 function updateUI() {
-  const topPCheckbox = document.getElementById('param-filter-top-p');
-  const tempCheckbox = document.getElementById('param-filter-temperature');
-  
-  if (topPCheckbox) topPCheckbox.checked = settings.filterTopP;
-  if (tempCheckbox) tempCheckbox.checked = settings.filterTemperature;
+  $('#param-filter-top-p').prop('checked', settings.filterTopP);
+  $('#param-filter-temperature').prop('checked', settings.filterTemperature);
 }
 
-// Определяем функцию-перехватчик в глобальной области
-globalThis.parameterFilterInterceptor = function(chat, contextSize, abort, type) {
-  // Этот перехватчик можно оставить пустым или использовать для логирования
-};
-
-// Инициализация расширения
-const { eventSource, event_types } = SillyTavern.getContext();
-
-// Перехватываем API запросы один раз при загрузке
-interceptAPIRequests();
-
-// Загружаем настройки при старте
-loadSettings();
-
-// Настройка обработчиков событий для UI
-eventSource.on(event_types.APP_READY, () => {
-  setupEventHandlers();
-});
-
+// Настройка обработчиков событий
 function setupEventHandlers() {
-  const topPCheckbox = document.getElementById('param-filter-top-p');
-  const tempCheckbox = document.getElementById('param-filter-temperature');
+  $('#param-filter-top-p').off('change').on('change', function() {
+    settings.filterTopP = $(this).prop('checked');
+    saveSettings();
+    console.log('Parameter Filter: Top P filter', settings.filterTopP ? 'enabled' : 'disabled');
+  });
   
-  if (topPCheckbox) {
-    topPCheckbox.addEventListener('change', (e) => {
-      settings.filterTopP = e.target.checked;
-      saveSettings();
-    });
-  }
-  
-  if (tempCheckbox) {
-    tempCheckbox.addEventListener('change', (e) => {
-      settings.filterTemperature = e.target.checked;
-      saveSettings();
-    });
-  }
+  $('#param-filter-temperature').off('change').on('change', function() {
+    settings.filterTemperature = $(this).prop('checked');
+    saveSettings();
+    console.log('Parameter Filter: Temperature filter', settings.filterTemperature ? 'enabled' : 'disabled');
+  });
 }
 
+// Перехват API запросов
 function interceptAPIRequests() {
   const originalFetch = window.fetch;
   
@@ -87,12 +61,12 @@ function interceptAPIRequests() {
         // Проверяем настройки и удаляем параметры при необходимости
         if (settings.filterTopP && body.top_p !== undefined) {
           delete body.top_p;
-          console.log('Parameter Filter: Removed top_p');
+          console.log('Parameter Filter: Removed top_p from request');
         }
         
         if (settings.filterTemperature && body.temperature !== undefined) {
           delete body.temperature;
-          console.log('Parameter Filter: Removed temperature');
+          console.log('Parameter Filter: Removed temperature from request');
         }
         
         options.body = JSON.stringify(body);
@@ -104,3 +78,26 @@ function interceptAPIRequests() {
     return originalFetch.call(this, url, options);
   };
 }
+
+// Определяем функцию-перехватчик в глобальной области
+globalThis.parameterFilterInterceptor = function(chat, contextSize, abort, type) {
+  // Этот перехватчик можно оставить пустым или использовать для логирования
+};
+
+// Инициализация расширения
+jQuery(async () => {
+  // Добавляем HTML настроек
+  const settingsHtml = await renderExtensionTemplateAsync(extensionFolder, 'settings');
+  $('#extensions_settings2').append(settingsHtml);
+  
+  // Загружаем настройки
+  loadSettings();
+  
+  // Настраиваем обработчики
+  setupEventHandlers();
+  
+  // Перехватываем fetch один раз при загрузке
+  interceptAPIRequests();
+  
+  console.log('Parameter Filter: Extension loaded');
+});
