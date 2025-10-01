@@ -5,25 +5,15 @@
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <div class="parameter-filter-description">
-                <small>Отключает выбранные параметры при отправке запросов к API. Полезно для моделей, которые не поддерживают определённые параметры.</small>
-            </div>
-            
-            <div class="parameter-filter-option">
-                <label class="checkbox_label" for="param-filter-top-p">
-                    <input type="checkbox" id="param-filter-top-p" />
-                    <span>Отключить Top P</span>
-                </label>
-                <small class="parameter-filter-hint">Удаляет параметр top_p из запроса</small>
-            </div>
-            
-            <div class="parameter-filter-option">
-                <label class="checkbox_label" for="param-filter-temperature">
-                    <input type="checkbox" id="param-filter-temperature" />
-                    <span>Отключить Temperature</span>
-                </label>
-                <small class="parameter-filter-hint">Удаляет параметр temperature из запроса</small>
-            </div>
+            <label class="flex-container" title="Удаляет параметр top_p из запросов к API">
+                <input type="checkbox" id="param-filter-top-p">
+                <span>Отключить Top P</span>
+            </label>
+
+            <label class="flex-container" title="Удаляет параметр temperature из запросов к API">
+                <input type="checkbox" id="param-filter-temperature">
+                <span>Отключить Temperature</span>
+            </label>
         </div>
     </div>
 </div>
